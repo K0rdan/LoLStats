@@ -14,6 +14,10 @@
 		// Résultats
 		$response_array['status'] = "success";
 		$response_array['ID'] = $ID;
+
+		// Save data in session for reuse.
+		$_SESSION['LOLApi'] = $LOLApi;
+
 		echo json_encode($response_array);
 	}
 	else

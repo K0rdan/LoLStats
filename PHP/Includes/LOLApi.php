@@ -20,11 +20,16 @@
 		
 		// METHODS {
 			// Constructor
-			public function LOLApi()
+			public function LOLApi($LOLApi_p)
 			{
 				$this->baseUri = "https://".$this->Location.".api.pvp.net/api/lol/".$this->Location;
 				$this->MatchHistoryUri = $this->baseUri."/v2.2/matchhistory/";
 				$this->SummonerUri = $this->baseUri."/v1.4/summoner/by-name/";
+
+				// [ Optional ] - Init
+				if(isset($LOLApi_p)){
+					$this->setSummonerID($LOLApi_p->SummonerID);
+				}
 			}
 
 			// getSummonerID2
@@ -134,11 +139,11 @@
 	
 	
 	///////////////////////////////////////////////////////////////
-	$LOLApi["Location"] = "euw";
-	$LOLApi["baseUri"] = "https://".$LOLApi["Location"].".api.pvp.net/api/lol/".$LOLApi["Location"];
-	$LOLApi["MatchHistoryUri"] = $LOLApi["baseUri"]."/v2.2/matchhistory/";
-	$LOLApi["SummonerUri"] = $LOLApi["baseUri"]."/v1.4/summoner/by-name/";
-	$LOLApi["Key"] = "84437920-ce89-4491-97bd-df592330ab93";
-	$LOLApi["QueryRateLimit"] = round(500/600); // 500 queries per 10min
-	$LOLApi["QueryTimeOut"] = 60; // 60s
+//	$LOLApi["Location"] = "euw";
+//	$LOLApi["baseUri"] = "https://".$LOLApi["Location"].".api.pvp.net/api/lol/".$LOLApi["Location"];
+//	$LOLApi["MatchHistoryUri"] = $LOLApi["baseUri"]."/v2.2/matchhistory/";
+//	$LOLApi["SummonerUri"] = $LOLApi["baseUri"]."/v1.4/summoner/by-name/";
+//	$LOLApi["Key"] = "84437920-ce89-4491-97bd-df592330ab93";
+//	$LOLApi["QueryRateLimit"] = round(500/600); // 500 queries per 10min
+//	$LOLApi["QueryTimeOut"] = 60; // 60s
 ?>
