@@ -90,7 +90,7 @@ $(document).ready(function(){
 					getMatches(data.matches);
 				}
 				else
-					console.log(data.message);
+					console.log("MatchListError : " + data.message);
 			}
 		});
 		
@@ -569,4 +569,22 @@ $(document).ready(function(){
 		e.stopPropagation();
 		toggle_block($(this).closest(".list_block"));
 	});	
+
+	// TEMP - Test Websocket
+	var socket = new WebSocket('ws://158.58.176.151:8080');
+	socket.onopen(function(event){
+		socket.send("Initial message");
+
+		// Event handler : Message receive from server
+		socket.onmessage = function(event){
+			console.log("Server : ", event);
+		};
+
+		// Event handler : Socket closed
+		socket.onclose = function(event){
+			console.log("Socket closed");
+		}
+
+		socket.close();
+	});
 });
