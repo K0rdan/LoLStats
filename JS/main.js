@@ -1,9 +1,19 @@
 $(document).ready(function(){
 	// Functions
 	function getMatches(matchList) {
-		$.each(matchList, function(i, matchInfo) {
+		if(summonerID != 0){
+			var socket = io.connect('localhost:8080');
+			socket.emit('setSummonerID', summonerID);
+			socket.emit('getMatchesDetails',matchList);
+			socket.on('message', function(msg){
+				console.log("[Server] ", msg);
+			});
+		}
+		else
+			console.log("SummonerID not defined");
+		/*$.each(matchList, function(i, matchInfo) {
 			getMatch(matchInfo.matchId);
-		});
+		});*/
 	}
 	function getMatch(matchId) {
 		$.ajax({
@@ -568,23 +578,5 @@ $(document).ready(function(){
 	$(".thumb_title > span").click(function(e){
 		e.stopPropagation();
 		toggle_block($(this).closest(".list_block"));
-	});	
-
-	// TEMP - Test Websocket
-	var socket = new WebSocket('ws://158.58.176.151:8080');
-	socket.onopen(function(event){
-		socket.send("Initial message");
-
-		// Event handler : Message receive from server
-		socket.onmessage = function(event){
-			console.log("Server : ", event);
-		};
-
-		// Event handler : Socket closed
-		socket.onclose = function(event){
-			console.log("Socket closed");
-		}
-
-		socket.close();
 	});
 });
