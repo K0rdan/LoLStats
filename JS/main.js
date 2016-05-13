@@ -1,12 +1,26 @@
 $(document).ready(function(){
+	var statistics = {};
 	// Functions
 	function getMatches(matchList) {
 		if(summonerID != 0){
-			var socket = io.connect('localhost:8080');
-			socket.emit('setSummonerID', summonerID);
-			socket.emit('getMatchesDetails',matchList);
-			socket.on('message', function(msg){
-				console.log("[Server] ", msg);
+			$.ajax({
+				type: "GET",
+				url: "./PHP/Ajax/roleDistribution.php",
+				dataType: "json",
+				async: true,
+				success: function (data) {
+					console.log(data);
+
+					var socket = io.connect('localhost:8080');
+					socket.emit('setSummonerID', summonerID);
+					socket.emit('getMatchesDetails',matchList);
+					socket.on('message', function(msg){
+						console.log("[Server] ", msg);
+					});
+					socket.on('LOLApi_MatchDetails', function(msg){
+						console.log(msg);
+					});
+				}
 			});
 		}
 		else

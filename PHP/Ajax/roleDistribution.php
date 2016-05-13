@@ -1,12 +1,45 @@
 <?php
-	include_once "../Includes/LOLApi.php";
+	//include_once "../Includes/LOLApi.php";
 	include_once "../Includes/database.php";
-	include_once "../Includes/util.php";
-	include_once "../Includes/simple_html_dom.php";
+	//include_once "../Includes/util.php";
+	//include_once "../Includes/simple_html_dom.php";
 		
 	$db = new Database();
-		
-	if(isset($_GET["summonerID"]) && isset($_GET["type"]))
+
+	// On récupère les informations des champions
+	$sql = "SELECT champions.id, champions.staticID, champions.name, champions.nameKR, r.name as role1, r2.name as role2 FROM champions INNER JOIN roles as r ON champions.role1 = r.id INNER JOIN roles as r2 ON champions.role2 = r2.id ORDER BY champions.name ASC";
+	$champions = array();
+
+	if($result = mysqli_query($db->getConnexionData(),$sql))
+	{
+		while($champion = mysqli_fetch_assoc($result))
+		{
+			array_push($champions, $champion);
+		}
+		mysqli_free_result($result);
+	}	// END SQL
+
+
+	// On récupère les roles
+	$sql = "SELECT name FROM roles";
+	$roleDistribution = array();
+	if($result = mysqli_query($db->getConnexionData(),$sql))
+	{
+		while($role = mysqli_fetch_assoc($result))
+		{
+			if($role["name"] != "N/A")
+				$roles[] = $role["name"];
+		}
+		mysqli_free_result($result);
+	}	// END SQL
+
+	// Résultats
+	$response_array['status'] = "success";
+	$response_array['data'] = array("champions"=>$champions, "roles"=>$roles);
+	echo json_encode($response_array);
+
+
+	/*if(isset($_GET["summonerID"]) && isset($_GET["type"]))
 	{		
 		$LOLApi = new LOLApi();
 		$LOLApi->setSummonerID($_GET["summonerID"]);
@@ -128,5 +161,5 @@
 		$response_array['status'] = "error";
 		$response_array['message'] = "Missing parameters";
 		echo json_encode($response_array);
-	}
+	}*/
 ?>

@@ -20,8 +20,32 @@ class LOLApi{
         // param :
         //      queue : Async's queue to manage all the HTTP request.
         //      match : ID of the match we want details.
-        getMatchDetails(queue, match) {
-            queue.push("https://euw.api.pvp.net/api/lol/euw/v2.2/match/" + match.matchId + "?api_key=84437920-ce89-4491-97bd-df592330ab93")
+        getMatchDetails(queue, match, socket) {
+            var me = this;
+            var response = null, result = {};
+            queue.push({req: "https://euw.api.pvp.net/api/lol/euw/v2.2/match/" + match.matchId + "?api_key=84437920-ce89-4491-97bd-df592330ab93",
+                        res: response}, function(err, response){
+                var json = JSON.parse(response);
+                var matchPlayerId = null;
+
+                if(typeof json.participantIdentities != "undefined")
+                {
+                    json.participantIdentities.forEach(function(item, index){
+                        if(item.player.summonerId == me.SummonerID)
+                            matchPlayerId = item.participantId;
+                    });
+                    json.participants.forEach(function(item, index){
+                        if(item.participantId == matchPlayerId){
+                            result["win"] = item.stats.winner;
+                            result["champion"] = item.championId;
+                            result["role"] = item.timeline.role;
+                            result["lane"] = item.timeline.lane;
+                        }
+                    });
+
+                    socket.emit('LOLApi_MatchDetails',result);
+                }
+            });
         };
 
         static queryRateLimit() { return 500/600 * 1000; }

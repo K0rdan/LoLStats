@@ -2,6 +2,7 @@
     // MODULES
     var os = require('os');
     var http = require('http');
+    var https = require('https');
     var fs = require('fs')
     var async = require('async');
 
@@ -12,24 +13,39 @@
 const PORT = 8080;
 
 var lastQuery = 0;
-var queue = async.queue(function(url, callback){
-    //console.log("Simulate HTTP GET for : ",url);
-    
+var queue = async.queue(function(params, callback){
+    //console.log("Simulate HTTP GET for : ",params.req);
+
     if(lastQuery == 0){
-        // TODO : HTTP GET
+        https.get(params.req, function(data){
+            var content = '';
+
+            data.on('data', function(chunk){
+                content += chunk;
+            });
+            data.on('end', function(){
+                callback(params.res, content);
+            });
+        });
         lastQuery = Date.now();
     }
     else{
-        if( (Date.now() - lastQuery) < LOLApi.queryRateLimit()){
+        if( (Date.now() - lastQuery) < LOLApi.queryRateLimit() ){
             while((Date.now() - lastQuery) < LOLApi.queryRateLimit());
-            console.log(Date.now() - lastQuery + "ms");
-            // TODO : HTTP GET
+            https.get(params.req, function(data){
+                var content = '';
+
+                data.on('data', function(chunk){
+                    content += chunk;
+                });
+                data.on('end', function(){
+                    callback(params.res, content);
+                });
+            });
             lastQuery = Date.now();
         }
     }
-    callback();
 });
-
 queue.drain = function(){
     console.log("Queue is empty");
 }
@@ -50,9 +66,9 @@ io.sockets.on('connection', function(socket){
             socket.emit('message', '[ERROR] SummonerID invalid : ' + summonerID);
     });
     socket.on('getMatchesDetails', function(matchList){
-        socket.emit('message', 'getMatchesdetails');
+        socket.emit('message', 'getMatchesDetails');
         matchList.forEach(function(match){
-            socket.emit('message', obj.getMatchDetails(queue, match));
+            obj.getMatchDetails(queue, match, socket);
         }, this);
     });
 });
