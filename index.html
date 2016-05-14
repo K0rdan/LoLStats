@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Template Bootstrap</title>
+		
+		<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="./JS/node_modules/socket.io-client/socket.io.js"></script>
+		<script>
+			$(document).ready(function(){
+				$(".list_block").mousemove(function(){
+					if($(this).attr("class") == "list_block col-xs-4 col-sm-4")
+					{
+						$(this).css("cursor","pointer");
+					}
+					else
+					{
+						$(this).css("cursor","default");
+					}
+				});
+				$(".list_block").click(function(){
+					if($(this).attr("class") == "list_block col-xs-4 col-sm-4")
+					{
+						toggle_block(this);
+					}
+				});
+				
+				$(".thumb_title > span").click(function(e){
+					e.stopPropagation();
+					toggle_block($(this).closest(".list_block"));
+				});
+				
+				function toggle_block(block){
+					$(block).toggleClass("col-xs-12 col-xs-4");
+					$(block).toggleClass("col-sm-12 col-sm-4");
+					$(block).find(".thumb_title > span").toggleClass("exp col");
+					$(block).find(".thumb_snapshot").toggle();
+					$(".list_block").not(block).toggle();
+				}
+			});
+
+			// TEMP - Test Websocket
+			var socket = io.connect('http://localhost:8080');
+			socket.emit('test','Test message from client');
+			socket.on('message', function(msg){
+				console.log("[Server] ", msg);
+			});
+		</script>
+		
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+		<style>
+			* { margin:0; padding:0;}
+			
+			body {
+				color: white;
+				background: #121212;
+				margin: 10px;
+			}
+						
+			#list {
+				position: relative;
+				width: 650px;
+				margin: 0 auto;
+				/*padding:6px 4px;*/
+				background: #202020;
+				box-shadow: 0 0 5px #000000;
+				border-radius: 5px;
+			}
+			
+			.blockTitle {
+				position: relative;
+				padding: 5px 5px 5px 10px;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+				border-radius: 5px 5px 0 0;
+				background: #303030;
+				font-weight: bold;
+			}
+			
+			#list_content {
+				position:relative;
+				height:100%;
+				padding:10px 5px;
+			}
+			
+			.list_block {
+				overflow: hidden;
+				height:170px;
+				padding:0 4px;
+			}
+			.list_block:not(:nth-child(-n+3)){
+				margin-top:10px;
+			}
+			
+			.thumb {
+				height:100%;
+				padding:4px;
+				border:1px solid #666;
+				border-radius:5px;
+				overflow: hidden;
+			}
+			.thumb:not(:first-child) {
+				margin-left:5px;
+			}
+			
+			.thumb_title {
+				position:relative;
+				margin:-5px;
+				padding:2px 5px 0 5px;
+				border-radius:5px 5px 0 0;
+				background:#666;
+			}
+			.thumb_title > span {
+				position:absolute;
+				top:50%;
+				right:5px;
+				width:10px;
+				height:10px;
+				margin-top:-5px;
+				cursor:pointer;
+			}
+			.thumb_title > span.exp {
+				background:url("./Images/Icon_Expand.png") no-repeat;
+				background-size:10px 10px;
+			}
+			.thumb_title > span.col {
+				background:url("./Images/Icon_Collapse.png") no-repeat;
+				background-size:10px 10px;
+			}
+			
+			.thumb_content {
+				height: 100%;
+				line-height: 147px;
+				text-align: center;
+				margin: 9px 0px;
+			}
+			
+			.thumb_snapshot {
+				margin: -4px;
+				width: 203px;
+				height: 146px;
+			}
+			.thumb_snapshot > img {
+				width: 100%;
+				height: 100%;
+				border-radius: 5px;
+			}
+			.thumb_snapshot > .comingsoon {
+				position: absolute;
+				top: 22px;
+				left: 5px;
+				width: 203px;
+				background: rgba(0,0,0,0.5);
+				border-radius: 5px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="list" class="block row">
+			<div class="blockTitle">
+				Outils
+			</div>
+			<div id="list_content" class="col-xs-12 col-sm-12">
+				<div id="block1" class="list_block col-xs-4 col-sm-4">
+					<div class="thumb">
+						<div class="thumb_title">Lane occupation<span class="exp"></span></div>
+						<div class="thumb_content">
+							<div class="thumb_snapshot">
+								<img src="./Images/Map.png" alt="" />
+								<span class="comingsoon">Coming soon...</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div id="block2" class="list_block col-xs-4 col-sm-4">
+					<div class="thumb">
+						<div class="thumb_title">Test<span class="exp"></span></div>
+						<div class="thumb_content">TEST</div>
+					</div>
+				</div>
+				<div id="block3" class="list_block col-xs-4 col-sm-4">
+					<div class="thumb">
+						<div class="thumb_title">Test<span class="exp"></span></div>
+						<div class="thumb_content">TEST</div>
+					</div>
+				</div>
+				<div id="block4" class="list_block col-xs-4 col-sm-4">
+					<div class="thumb">
+						<div class="thumb_title">Test<span class="exp"></span></div>
+						<div class="thumb_content">TEST</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
