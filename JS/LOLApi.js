@@ -2,7 +2,7 @@ class LOLApi{
     constructor(){
         // CONSTANTS {
             this.KEY = '84437920-ce89-4491-97bd-df592330ab93';
-            var QUERY_RATE_LIMIT = 500/600 * 1000; // 500 queries per 10min (600s) in ms
+            var QUERY_RATE_LIMIT = 500/600 * 1000 + 100; // 500 queries per 10min (600s) in ms
             this.QUERY_TIMEOUT = 60; // 60s
         // }
 
