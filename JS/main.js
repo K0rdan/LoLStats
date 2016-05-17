@@ -1,5 +1,9 @@
 $(document).ready(function(){
 	var statistics = {};
+
+	const WS_HOST = "localhost";
+	const WS_PORT = "8080";
+
 	// Functions
 	function getMatches(matchList) {
 		if(summonerID != 0){
@@ -9,13 +13,12 @@ $(document).ready(function(){
 				dataType: "json",
 				async: true,
 				success: function (data) {
-					console.log(data);
-
-					var socket = io.connect('localhost:8080');
+					console.log("[WS] Connectecting to " + WS_HOST + ":" + WS_PORT);
+					var socket = io.connect(WS_HOST+":"+WS_PORT);
 					socket.emit('setSummonerID', summonerID);
 					socket.emit('getMatchesDetails',matchList);
 					socket.on('message', function(msg){
-						console.log("[Server] ", msg);
+						console.log("[WS][Server] ", msg);
 					});
 					socket.on('LOLApi_MatchDetails', function(msg){
 						console.log(msg);

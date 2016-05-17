@@ -14,36 +14,24 @@ const PORT = 8080;
 
 var lastQuery = 0;
 var queue = async.queue(function(params, callback){
-    //console.log("Simulate HTTP GET for : ",params.req);
+    console.log("Simulate HTTP GET for : ",params.req);
 
-    if(lastQuery == 0){
-        https.get(params.req, function(data){
-            var content = '';
-
-            data.on('data', function(chunk){
-                content += chunk;
-            });
-            data.on('end', function(){
-                callback(params.res, content);
-            });
-        });
-        lastQuery = Date.now();
-    }
-    else{
-        if( (Date.now() - lastQuery) < LOLApi.queryRateLimit() ){
-            while((Date.now() - lastQuery) < LOLApi.queryRateLimit());
-            https.get(params.req, function(data){
-                var content = '';
-
-                data.on('data', function(chunk){
-                    content += chunk;
-                });
-                data.on('end', function(){
-                    callback(params.res, content);
-                });
-            });
+    try{
+        if(lastQuery == 0){
+            executeRequest(params, callback);
             lastQuery = Date.now();
         }
+        else{
+            if( (Date.now() - lastQuery) < LOLApi.queryRateLimit() ){
+                while((Date.now() - lastQuery) < LOLApi.queryRateLimit());
+
+                executeRequest(params, callback);
+                lastQuery = Date.now();
+            }
+        }
+    }
+    catch(e) {
+        console.log("[Error] - ",e);
     }
 });
 queue.drain = function(){
@@ -74,4 +62,51 @@ io.sockets.on('connection', function(socket){
 });
 
 server.listen(PORT);
+server.on('error', function(err){
+    console.log("[Error] - " + err);
+});
 console.log("The LOLStats server is now listening on " + os.hostname() + ":" + PORT);
+
+
+///////
+function executeRequest(req, params, callback){
+    var options = {
+        hostname: params.req,
+        port: 443,
+        method: 'GET'
+    };
+
+
+    var req = null;
+    req = https.get(params.req, function(data){
+        data.setEncoding('utf8');
+        var content = '';
+
+        data.on('data', function(chunk){
+            content += chunk;
+            clearTimeout(timeout);
+            timeout = setTimeout(fn, 10000);
+        }).on('end', function(){
+            clearTimeout(timeout);
+            callback(params.res, content);
+        });
+    });
+
+    if(req != null) {
+        var timeout_wrapper = function(req) {
+            return function() {
+                console.log("[Error] - request timeout, trying to abort... ", req);
+                req.abort();
+            };
+        };
+        var fn = timeout_wrapper(req);
+        var timeout = setTimeout(fn, 10000);
+
+        req.on('error', function(error){
+            console.log("[Error] - request error : ",error.message);
+        });
+        req.setTimeout(10000, function(){
+            console.log("[Error] - request timeout.");
+        });
+    }
+}
