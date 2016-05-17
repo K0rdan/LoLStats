@@ -1,4 +1,5 @@
 $(document).ready(function(){
+	var static_data = null;
 	var statistics = {};
 
 	const WS_HOST = "localhost";
@@ -13,6 +14,15 @@ $(document).ready(function(){
 				dataType: "json",
 				async: true,
 				success: function (data) {
+					static_data = data.data.champions;
+					$.each(data.data.roles, function(index, obj){
+						statistics[obj] = {
+							games: 0,
+							wins: 0,
+							losses: 0
+						};
+					});
+					// GET matches details
 					console.log("[WS] Connectecting to " + WS_HOST + ":" + WS_PORT);
 					var socket = io.connect(WS_HOST+":"+WS_PORT);
 					socket.emit('setSummonerID', summonerID);
@@ -20,8 +30,198 @@ $(document).ready(function(){
 					socket.on('message', function(msg){
 						console.log("[WS][Server] ", msg);
 					});
-					socket.on('LOLApi_MatchDetails', function(msg){
-						console.log(msg);
+					socket.on('LOLApi_MatchDetails', function(matchStats){
+						console.log("[WS][Server] match details : ",matchStats);
+						$.each(static_data, function(index, champion){
+							if(matchStats.champion == champion.staticID){
+								statistics[champion["role1"]].games++;
+								if(champion["role2"] != "N/A")
+									statistics[champion["role2"]].games++;
+								if(matchStats["win"])
+								{
+									statistics[champion["role1"]].wins++;
+									if(champion["role2"] != "N/A")
+										statistics[champion["role2"]].wins++;
+								}
+								else
+								{
+									statistics[champion["role1"]].losses++;
+									if(champion["role2"] != "N/A")
+										statistics[champion["role2"]].losses++;
+								}
+
+								pieData = getPieData(statistics);
+								pie10Last.pieData = pieData;
+								pie10Last.max = getMaxPieData(pieData);
+								gaugeData10Last = getGaugeData(statistics);
+
+								var selectedData10Last;
+
+								// Affichage du graphe '10Last'
+								$("#Chart10LastRanked > .ChartContent > .RoleDistribution").dxPieChart({
+									dataSource: pie10Last.pieData,
+									commonSeriesSettings: {
+										hoverStyle: { hatching: { opacity: 0.9 } },
+										selectionStyle: { hatching: { opacity: 0.75 } }
+									},
+									series: {
+										type: 'doughnut',
+										innerRadius: 0.75,
+										argumentField: 'Role',
+										valueField: 'Value',
+										border: {
+											visible: true,
+											color: '#121212'
+										},
+										selectionStyle: {
+											border: {
+												visible: true,
+												color: '#121212'
+											}
+										}
+									},
+									pointClick: function (clickedPoint) {
+										clickedPoint.fullState & 2 ? clickedPoint.clearSelection() : clickedPoint.select();
+										$("#Chart10LastRanked > .ChartContent > .ChartInfo > span.SelectedValue").html(Math.round(clickedPoint.percent*100)+"%");
+										$("#Chart10LastRanked > .ChartContent > .ChartInfo > span.SelectedValue").css("margin-left", "-"+parseInt($("#Chart10LastRanked > .ChartContent > .ChartInfo > span.SelectedValue").css("width"))/2+"px");
+										$("#Chart10LastRanked > .ChartContent > .ChartInfo > img.SelectedIcon").attr("src","./Images/Role_"+clickedPoint.argument+".png");
+
+										$.each(gaugeData10Last, function(index, obj){
+											if(gaugeData10Last[index].Role == clickedPoint.argument)
+											{
+												$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge("instance").value(gaugeData10Last[index].WinRate);
+												$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge("instance").subvalues(gaugeData10Last[index].WinRate);
+
+												var couleur;
+												if(gaugeData10Last[index].WinRate < 60)
+												{
+													if(gaugeData10Last[index].WinRate < 50)
+													{
+														if(gaugeData10Last[index].WinRate < 40)
+															couleur="red";
+														else
+															couleur="orange";
+													}
+													else
+														couleur="yellow";
+												}
+												else
+													couleur="green";
+
+												$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge("instance").option({
+													valueIndicator: {
+														text: {
+															font: {
+																color: couleur
+															}
+														}
+													},
+													subValueIndicator: {
+														color: couleur
+													}
+												});
+											}
+										});
+									},
+									legend: { visible: false },
+									palette: [paletteRoles.Assassin, paletteRoles.Fighter, paletteRoles.Mage, paletteRoles.Marksman, paletteRoles.Support, paletteRoles.Tank]
+								});
+
+								$.each($("#Chart10LastRanked > .ChartContent > .RoleDistribution").dxPieChart("instance").series[0]._points, function(_, point){
+									if(point.originalValue == pie10Last.max)
+									{
+										$("#Chart10LastRanked > .ChartContent > .ChartInfo > span.SelectedValue").html(Math.round(point.percent*100)+"%");
+										$("#Chart10LastRanked > .ChartContent > .ChartInfo > img.SelectedIcon").attr("src","./Images/Role_"+point.argument+".png");
+										$("#Chart10LastRanked > .ChartContent > .ChartInfo").css("display","block");
+										point.select();
+
+										$.each(gaugeData10Last, function(index, obj){
+											if(gaugeData10Last[index].Role == point.argument)
+												selectedData10Last = gaugeData10Last[index];
+										});
+									}
+								});
+
+								// Affichage du graphe 'Winrate 10Last'
+								$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge({
+									scale: {
+										startValue: 0,
+										endValue: 100,
+										majorTick: {
+											tickInterval: 10
+										},
+										label: {
+											visible:true,
+											precision:0,
+											indentFromTick:2,
+											font: {
+												size: 10
+											}
+										}
+									},
+									rangeContainer: {
+										ranges: [
+											{ startValue: 0, endValue: 40, color: 'red' },
+											{ startValue: 40, endValue: 50, color: 'orange' },
+											{ startValue: 50, endValue: 60, color: 'yellow' },
+											{ startValue: 60, endValue: 100, color: 'green' }
+										]
+									},
+									valueIndicator: {
+										type: "rangeBar",
+										color:"transparent",
+										offset:5,
+										size:5,
+										text: {
+											indent: 15,
+											format: 'fixedPoint',
+											precision: 0,
+											font: {
+												color: function(){
+													if(selectedData10Last.WinRate < 60)
+													{
+														if(selectedData10Last.WinRate < 50)
+														{
+															if(selectedData10Last.WinRate < 40)
+																return "red";
+															else
+																return "orange";
+														}
+														else
+															return "yellow";
+													}
+													else
+														return "green";
+												}
+											}
+										}
+									},
+									subvalueIndicator: {
+										width:8,
+										length:8,
+										offset:0,
+										color: function(){
+											if(selectedData10Last.WinRate < 60)
+											{
+												if(selectedData10Last.WinRate < 50)
+												{
+													if(selectedData10Last.WinRate < 40)
+														return "red";
+													else
+														return "orange";
+												}
+												else
+													return "yellow";
+											}
+											else
+												return "green";
+										},
+									},
+									subvalues: selectedData10Last.WinRate,
+									value: selectedData10Last.WinRate
+								});
+							}
+						});
 					});
 				}
 			});
@@ -54,7 +254,7 @@ $(document).ready(function(){
 	
 	function getPieData(data){
 		var pieData = new Array();
-		$.each(data.roles, function(name, value){
+		$.each(data, function(name, value){
 			var role = new Object();
 				role["Role"] = name;
 				role["Value"] = value.games;
@@ -76,7 +276,7 @@ $(document).ready(function(){
 	
 	function getGaugeData(data) {
 		var gaugeData = new Array();
-		$.each(data.roles, function(name, value){
+		$.each(data, function(name, value){
 			var role = new Object();
 				role["Role"] = name;
 				if((value.wins+value.losses) > 0)
