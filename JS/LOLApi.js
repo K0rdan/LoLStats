@@ -23,13 +23,17 @@ class LOLApi{
         getMatchDetails(queue, match, socket) {
             var me = this;
             var response = null, result = {};
+
             queue.push({req: "https://euw.api.pvp.net/api/lol/euw/v2.2/match/" + match.matchId + "?api_key=84437920-ce89-4491-97bd-df592330ab93",
+                        user: socket,
+                        match: match.matchId,
                         res: response}, function(err, json){
                 var matchPlayerId = null;
 
                 if(err != null){
                     console.log("[LOLAPI][ERROR] - getMatchDetails - (Obj) err - Params { matchId : '" + match.matchId + "' }, Message :'" + err + "'");
-                    queue.pause();
+                    me.getMatchDetails(queue, match, socket); // Requeue the game.
+                    //queue.pause();
                 }
                 else {
                     if(typeof json.participantIdentities != "undefined")
