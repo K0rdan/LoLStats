@@ -45,20 +45,20 @@ var io = require('socket.io').listen(server);
 io.sockets.on('connection', function(socket){
     console.log(' - New connection from ' + socket.request.connection.remoteAddress);
 
-    var obj = new LOLApi();
+    var _LOLApi = new LOLApi();
 
     socket.emit('message', 'connected');
     socket.on('setSummonerID', function(summonerID){
         var ID = parseInt(summonerID) || 0;
         if(ID != 0)
-            obj.setSummonerID = summonerID;
+            _LOLApi.setSummonerID = summonerID;
         else
             socket.emit('message', '[ERROR] SummonerID invalid : ' + summonerID);
     });
     socket.on('getMatchesDetails', function(matchList){
         socket.emit('message', 'getMatchesDetails');
         matchList.forEach(function(match){
-            obj.getMatchDetails(queue, match, socket);
+            _LOLApi.getMatchDetails(queue, match, socket);
         }, this);
     });
 });

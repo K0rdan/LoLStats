@@ -14,6 +14,7 @@
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 		<script src="http://ajax.aspnetcdn.com/ajax/globalize/0.1.1/globalize.min.js"></script>
 		<script type="text/javascript" src="http://cdn3.devexpress.com/jslib/14.1.6/js/dx.chartjs.js"></script>
+		<script type="text/javascript" src="http://cdn3.devexpress.com/jslib/15.2.9/js/dx.chartjs.js"></script>
 		<script type="text/javascript" src="./JS/node_modules/socket.io-client/socket.io.js"></script>
 		<script type="text/javascript" src="./JS/main.js"></script>
 	</head>
