@@ -204,7 +204,7 @@ $(document).ready(function(){
 						console.log("[WS][Server] ", msg);
 					});
 					socket.on('LOLApi_MatchDetails', function(matchStats){
-						console.log("[WS][Server] match details : ",matchStats);
+						console.log("[WS][Server]  match details : ",matchStats);
 						$.each(static_data, function(index, champion){
 							if(matchStats.champion == champion.staticID){
 								statistics[champion["role1"]].games++;
@@ -805,5 +805,23 @@ $(document).ready(function(){
 	$(".thumb_title > span").click(function(e){
 		e.stopPropagation();
 		toggle_block($(this).closest(".list_block"));
+	});
+
+	var queuePaused = false;
+	$("#pauseQueue").click(function(){
+		if(socket !=null){
+			if(!queuePaused){
+				socket.emit('pauseQueue');
+				$(this).text("ResumeQueue");
+				queuePaused = true;
+			}
+			else {
+				socket.emit('resumeQueue');
+				$(this).text("PauseQueue");
+				queuePaused = false;
+			}
+		}
+		else
+			console.log("Socket null");
 	});
 });
