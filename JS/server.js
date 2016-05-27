@@ -1,100 +1,31 @@
 // INCLUDES {
     // MODULES
+    var io = require('socket.io');
     var os = require('os');
     var http = require('http');
     var https = require('https');
     var url = require('url');
     var fs = require('fs')
     var async = require('async');
-    //var request = require('request');
 
     // CUSTOM FILES
     var LOLApi = require('./LOLApi.js');
 // }
 
-const PORT = 8080;
+// INIT {
+    const PORT = 8080;
+    var queue = initQueue();
+    var server = http.createServer();
+    var clients = [];
+// }
 
-var queue = initQueue();
-var server = http.createServer();
-var clients = [];
-var io = require('socket.io').listen(server);
-
-io.sockets.on('connection', function(socket){
-    console.log(' - New connection from ' + socket.request.connection.remoteAddress);
-
-    var _LOLApi = new LOLApi();
-    var pausedTasks = [];
-
-    // Save the client
-    clients.push(socket.id);
-
-    socket.emit('message', 'connected');
-    socket.on('setSummonerID', function(summonerID){
-        var ID = parseInt(summonerID) || 0;
-        if(ID != 0)
-            _LOLApi.setSummonerID = summonerID;
-        else
-            socket.emit('message', '[ERROR] SummonerID invalid : ' + summonerID);
-    });
-    socket.on('getMatchesDetails', function(matchList){
-        socket.emit('message', 'getMatchesDetails');
-        matchList.forEach(function(match){
-            _LOLApi.getMatchDetails(queue, match, socket);
-        }, this);
-    });
-    socket.on('pauseQueue', function(){
-        if(queue.length() > 0){
-            queue.pause();
-
-            // Inverted loop to not affect the index (i) when we splice the array.
-            for(var i=queue.length()-1; i >= 0; i--){
-                if(queue.tasks[i].data.user == socket){
-                    pausedTasks.push({"matchId" : queue.tasks[i].data.match});// Add the task into the pausedTasks array
-                    queue.tasks.splice(i, 1);
-                }
-            }
-
-            queue.resume();
-            socket.emit('message', 'Tasks paused');
-        }
-        else
-            socket.emit('message', 'Queue empty');
-    });
-    socket.on('resumeQueue', function(){
-        if(pausedTasks.length > 0){
-            if(queue.idle()){
-                queue = initQueue();
-            }
-
-            // Inverted loop to not affect the index (i) when we splice the array.
-            for(var i=pausedTasks.length-1; i >= 0; i--){
-                _LOLApi.getMatchDetails(queue, pausedTasks[i], socket);
-                pausedTasks.splice(i, 1);
-            }
-
-            socket.emit('message', 'Tasks resumed');
-        }
-        else
-            socket.emit('message', 'Queue Empty');
-    });
-    socket.on('error', function(err){
-       console.log("[ERROR] - " + err);
-    });
-});
-
-server.listen(PORT);
-server.on('error', function(err){
-    console.log("[ERROR] - " + err);
-});
-console.log("The LOLStats server is now listening on " + os.hostname() + ":" + PORT);
-
-
-///////
+// FUNCTIONS {
+/// Init rate-limited (async) queue.
 function initQueue(){
     var lastQuery = 0;
     var q = async.queue(function(params, callback){
         try{
-            console.log("Simulate HTTP GET for : ",params.req);
+            //console.log("Simulate HTTP GET for : ",params.req);
 
             if(lastQuery == 0){
                 executeRequest(params, callback);
@@ -120,6 +51,7 @@ function initQueue(){
 
     return q;
 }
+/// Execute HTTP request and return the JSON response to the callback.
 function executeRequest(params, callback){
     var jsonObj = '';
     var parsedUrl = url.parse(params.req);
@@ -157,6 +89,11 @@ function executeRequest(params, callback){
             console.log("[ERROR] - executeRequest - (Obj) Response : " + error);
             callback(error, null);
         });
+    }).on('socket', function(socket){
+        // socket.setTimeout(_LOL);
+        // socket.on('timeout', function(){
+        //     callback(null, null);
+        // });
     }).on('error', function(error){
         console.log("[ERROR] - executeRequest - (Obj) Request : " + error);
         // callback(error); // TODO : Errors not handled in LOLApi
@@ -164,3 +101,80 @@ function executeRequest(params, callback){
 
     req.end();
 }
+// Run the LOLStats server
+function runServer(){
+    io.listen(server).sockets.on('connection', function(socket){
+        console.log(' - New connection from ' + socket.request.connection.remoteAddress);
+
+        var _LOLApi = new LOLApi();
+        var pausedTasks = [];
+
+        // Save the client
+        clients.push(socket.id);
+
+        socket.emit('message', 'connected');
+        // EVENT HANDLERS {
+        socket.on('setSummonerID', function(summonerID){
+            var ID = parseInt(summonerID) || 0;
+            if(ID != 0)
+                _LOLApi.setSummonerID = summonerID;
+            else
+                socket.emit('message', '[ERROR] SummonerID invalid : ' + summonerID);
+        });
+        socket.on('getMatchesDetails', function(matchList){
+            socket.emit('message', 'getMatchesDetails');
+            matchList.forEach(function(match){
+                _LOLApi.getMatchDetails(queue, match.matchId, socket);
+            }, this);
+        });
+        socket.on('pauseQueue', function(){
+            if(queue.length() > 0){
+                queue.pause();
+
+                // Inverted loop to not affect the index (i) when we splice the array.
+                for(var i=queue.length()-1; i >= 0; i--){
+                    if(queue.tasks[i].data.user == socket){
+                        pausedTasks.push({"matchId" : queue.tasks[i].data.match});// Add the task into the pausedTasks array
+                        queue.tasks.splice(i, 1);
+                    }
+                }
+
+                queue.resume();
+                socket.emit('message', 'Tasks paused');
+            }
+            else
+                socket.emit('message', 'Queue empty');
+        });
+        socket.on('resumeQueue', function(){
+            if(pausedTasks.length > 0){
+                if(queue.idle()){
+                    queue = initQueue();
+                }
+
+                // Inverted loop to not affect the index (i) when we splice the array.
+                for(var i=pausedTasks.length-1; i >= 0; i--){
+                    _LOLApi.getMatchDetails(queue, pausedTasks[i], socket);
+                    pausedTasks.splice(i, 1);
+                }
+
+                socket.emit('message', 'Tasks resumed');
+            }
+            else
+                socket.emit('message', 'Queue Empty');
+        });
+        socket.on('error', function(err){
+            console.log("[ERROR] - " + err);
+            socket.disconnect(true);
+        });
+        // }
+    });
+    server.listen(PORT);
+    server.on('error', function(err){
+        console.log("[ERROR] - " + err);
+    });
+    console.log("The LOLStats server is now listening on " + os.hostname() + ":" + PORT);
+}
+// }
+
+/////////////////////////////////////////////////////////////////////////////
+runServer();
