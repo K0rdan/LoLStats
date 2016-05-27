@@ -2,7 +2,7 @@ $(document).ready(function(){
 	var static_data = null;
 	var statistics = {};
 
-	const WS_HOST = "";
+	const WS_HOST = "localhost";
 	const WS_PORT = "8080";
 	var socket = null;
 
@@ -196,6 +196,12 @@ $(document).ready(function(){
 					});
 
 					try {
+						// reset the socket
+						if(socket != null){
+							socket.disconnect(true);
+							socket.destroy();
+						}
+
 						// GET matches details
 						console.log("[WS] Connectecting to " + WS_HOST + ":" + WS_PORT);
 						socket = io.connect(WS_HOST+":"+WS_PORT, { reconnection: false, timeout: 5000 });
@@ -228,6 +234,8 @@ $(document).ready(function(){
 							pie10Last.pieData = pieData;
 							pie10Last.max = getMaxPieData(pieData);
 							gaugeData10Last = getGaugeData(statistics);
+
+							console.log(selectedData10Last);
 
 							$("#Chart10LastRanked > .ChartContent > .RoleDistribution").dxPieChart("instance").option('dataSource', pie10Last.pieData);
 							$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge("instance").option('value', selectedData10Last.WinRate);
