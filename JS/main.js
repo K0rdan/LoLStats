@@ -2,7 +2,7 @@ $(document).ready(function(){
 	var static_data = null;
 	var statistics = {};
 
-	const WS_HOST = "localhost";
+	const WS_HOST = "";
 	const WS_PORT = "8080";
 	var socket = null;
 
@@ -195,44 +195,53 @@ $(document).ready(function(){
 						value: selectedData10Last.WinRate
 					});
 
-					// GET matches details
-					console.log("[WS] Connectecting to " + WS_HOST + ":" + WS_PORT);
-					socket = io.connect(WS_HOST+":"+WS_PORT);
-					socket.emit('setSummonerID', summonerID);
-					socket.emit('getMatchesDetails',matchList);
-					socket.on('message', function(msg){
-						console.log("[WS][Server] ", msg);
-					});
-					socket.on('LOLApi_MatchDetails', function(matchStats){
-						console.log("[WS][Server]  match details : ",matchStats);
-						$.each(static_data, function(index, champion){
-							if(matchStats.champion == champion.staticID){
-								statistics[champion["role1"]].games++;
-								if(champion["role2"] != "N/A")
-									statistics[champion["role2"]].games++;
-								if(matchStats["win"])
-								{
-									statistics[champion["role1"]].wins++;
+					try {
+						// GET matches details
+						console.log("[WS] Connectecting to " + WS_HOST + ":" + WS_PORT);
+						socket = io.connect(WS_HOST+":"+WS_PORT, { reconnection: false, timeout: 5000 });
+						socket.emit('setSummonerID', summonerID);
+						socket.emit('getMatchesDetails',matchList);
+
+						socket.on('LOLApi_MatchDetails', function(matchStats){
+							console.log("[WS][Server]  match details : ",matchStats);
+							$.each(static_data, function(index, champion){
+								if(matchStats.champion == champion.staticID){
+									statistics[champion["role1"]].games++;
 									if(champion["role2"] != "N/A")
-										statistics[champion["role2"]].wins++;
+										statistics[champion["role2"]].games++;
+									if(matchStats["win"])
+									{
+										statistics[champion["role1"]].wins++;
+										if(champion["role2"] != "N/A")
+											statistics[champion["role2"]].wins++;
+									}
+									else
+									{
+										statistics[champion["role1"]].losses++;
+										if(champion["role2"] != "N/A")
+											statistics[champion["role2"]].losses++;
+									}
 								}
-								else
-								{
-									statistics[champion["role1"]].losses++;
-									if(champion["role2"] != "N/A")
-										statistics[champion["role2"]].losses++;
-								}
-							}
+							});
+
+							pieData = getPieData(statistics);
+							pie10Last.pieData = pieData;
+							pie10Last.max = getMaxPieData(pieData);
+							gaugeData10Last = getGaugeData(statistics);
+
+							$("#Chart10LastRanked > .ChartContent > .RoleDistribution").dxPieChart("instance").option('dataSource', pie10Last.pieData);
+							$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge("instance").option('value', selectedData10Last.WinRate);
 						});
-
-						pieData = getPieData(statistics);
-						pie10Last.pieData = pieData;
-						pie10Last.max = getMaxPieData(pieData);
-						gaugeData10Last = getGaugeData(statistics);
-
-						$("#Chart10LastRanked > .ChartContent > .RoleDistribution").dxPieChart("instance").option('dataSource', pie10Last.pieData);
-						$('#Chart10LastRanked > .ChartContent > .WinRate').dxCircularGauge("instance").option('value', selectedData10Last.WinRate);
-					});
+						socket.on('message', function(msg){
+							console.log("[WS][Server] ", msg);
+						});
+						socket.on('disconnect', socketErrorHandler);
+						socket.on('connect_error', socketErrorHandler);
+						socket.on('error', socketErrorHandler);
+					}
+					catch(err){
+						socketErrorHandler(err);
+					}
 				}
 			});
 		}
@@ -242,6 +251,13 @@ $(document).ready(function(){
 			getMatch(matchInfo.matchId);
 		});*/
 	}
+
+	function socketErrorHandler(err){
+		console.log("[WS][ERROR] ", err);
+		socket.disconnect(true);
+		socket = null;
+	}
+
 	function getMatch(matchId) {
 		$.ajax({
 			type: "GET",
